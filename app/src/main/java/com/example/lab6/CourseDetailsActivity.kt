@@ -33,10 +33,11 @@ class CourseDetailsActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    // Danh sách khóa học được lưu trữ trong state để cập nhật giao diện khi dữ liệu thay đổi
                     val courseList = remember { mutableStateListOf<Course?>() }
                     val context = LocalContext.current
 
-                    // Gọi Firestore để lấy dữ liệu
+                    // Gọi Firestore để lấy dữ liệu khi Composable này được tạo
                     LaunchedEffect(Unit) {
                         fetchCoursesFromFirebase(courseList, context)
                     }
@@ -49,23 +50,24 @@ class CourseDetailsActivity : ComponentActivity() {
     }
 }
 
-// Hàm lấy dữ liệu từ Firestore
+// Hàm lấy danh sách khóa học từ Firestore
 fun fetchCoursesFromFirebase(courseList: SnapshotStateList<Course?>, context: android.content.Context) {
     val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+
     db.collection("Courses").get()
         .addOnSuccessListener { queryDocumentSnapshots ->
             if (!queryDocumentSnapshots.isEmpty) {
-                courseList.clear() // Xóa dữ liệu cũ trước khi cập nhật
+                courseList.clear() // Xóa danh sách cũ trước khi cập nhật dữ liệu mới
                 for (document in queryDocumentSnapshots.documents) {
                     val course: Course? = document.toObject(Course::class.java)
-                    courseList.add(course)
+                    courseList.add(course) // Thêm từng khóa học vào danh sách
                 }
             } else {
-                Toast.makeText(context, "No data found in Database", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Không có dữ liệu trong cơ sở dữ liệu", Toast.LENGTH_SHORT).show()
             }
         }
         .addOnFailureListener {
-            Toast.makeText(context, "Failed to fetch data.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Lấy dữ liệu thất bại.", Toast.LENGTH_SHORT).show()
         }
 }
 
@@ -75,33 +77,36 @@ fun firebaseUI(context: android.content.Context, courseList: SnapshotStateList<C
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(Color.White), // Đặt màu nền trắng
+        verticalArrangement = Arrangement.Top, // Căn trên cùng
+        horizontalAlignment = Alignment.CenterHorizontally // Căn giữa theo chiều ngang
     ) {
+        // Sử dụng LazyColumn để hiển thị danh sách khóa học
         LazyColumn {
             itemsIndexed(courseList) { index, item ->
-                CourseCard(context, item)
+                CourseCard(context, item) // Hiển thị từng khóa học
             }
         }
     }
 }
 
-// Composable hiển thị từng khóa học
+// Composable hiển thị thông tin của một khóa học dưới dạng Card
 @Composable
 fun CourseCard(context: android.content.Context, course: Course?) {
     Card(
         onClick = {
-            Toast.makeText(context, "${course?.courseName} selected.", Toast.LENGTH_SHORT).show()
+            // Hiển thị thông báo khi người dùng nhấn vào khóa học
+            Toast.makeText(context, "${course?.courseName} được chọn.", Toast.LENGTH_SHORT).show()
         },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(6.dp)
+            .padding(8.dp), // Thêm padding để dễ nhìn hơn
+        elevation = CardDefaults.cardElevation(6.dp) // Đổ bóng cho Card
     ) {
         Column(
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier.padding(8.dp) // Khoảng cách giữa nội dung và viền Card
         ) {
+            // Hiển thị tên khóa học nếu có
             course?.courseName?.let {
                 Text(
                     text = it,
@@ -112,6 +117,7 @@ fun CourseCard(context: android.content.Context, course: Course?) {
                 )
             }
 
+            // Hiển thị thời gian khóa học nếu có
             course?.courseDuration?.let {
                 Text(
                     text = it,
@@ -122,6 +128,7 @@ fun CourseCard(context: android.content.Context, course: Course?) {
                 )
             }
 
+            // Hiển thị mô tả khóa học nếu có
             course?.courseDescription?.let {
                 Text(
                     text = it,
@@ -140,12 +147,15 @@ fun addDataToFirebase(courseName: String, courseDuration: String, courseDescript
     val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     val dbCourses: CollectionReference = db.collection("Courses")
 
+    // Tạo một đối tượng khóa học mới
     val course = Course(courseName, courseDescription, courseDuration)
 
-    dbCourses.add(course).addOnSuccessListener {
-        Toast.makeText(context, "Course added successfully", Toast.LENGTH_SHORT).show()
-    }.addOnFailureListener { e ->
-        Toast.makeText(context, "Failed to add course \n$e", Toast.LENGTH_SHORT).show()
-    }
+    // Thêm khóa học vào Firestore
+    dbCourses.add(course)
+        .addOnSuccessListener {
+            Toast.makeText(context, "Thêm khóa học thành công", Toast.LENGTH_SHORT).show()
+        }
+        .addOnFailureListener { e ->
+            Toast.makeText(context, "Thêm khóa học thất bại\n$e", Toast.LENGTH_SHORT).show()
+        }
 }
-
